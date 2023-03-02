@@ -1,0 +1,77 @@
+STARKS 1 - Arithmetization by Eli Ben Sasson -> https://www.youtube.com/watch?v=9VuZvdxFZQo
+
+use of low degree polynomials to argue about computation 
+
+Goal : 
+Given (i) program P, (ii) input xin, (iii) time bound T
+Bob claims P(xin,xaux) = xout) after T steps, xaux is auxiliary (private) input
+
+Three goals:
+- integrity : can we trust Bob's output ? Can he prove it is correct ?
+- privacy: Will the proof leak Bob's xaux (medical/financial/info, etc.) ?
+- succintness: can the proof be verified in time o(T)?
+
+Bob Claim 1 : I have a list with 10^6 integers, all are in {1,...,10} 
+problem : can Alice check this with 2 queries to file and 99% certainty ? -> NO
+
+Bob Claim 2 : I have a encoded the list as a degree-10^6 function f (low-degree extension), evaluated on 10^9 points
+problem : can Alice check now with 2 queries to f and 99% certainty ? -> Not yet 
+
+Bob : Alice, what more do you need to be convinced claim 2 is true ?
+
+Alice : well ma boy, evaluate one more polynomial g of degree 10^7 - 10^6; then I shall query 1 random point in each of f and g, based on answers will know if claim 2 is true, with 99% certainty"
+
+What's the test ?
+Bob Claim 2 : I have a encoded the list as a degree-10^6 function f (low-degree extension), evaluated on 10^9 points
+
+Let C(X) = (X-1).(X-2)...(X-10) be the constraint polynomial of degree 10 that vanishes exactly on 1,...,10 -----> equals 0 on these inputs [if X = 1, X-1 = 0 then X-1 multiplied by ..... =0]
+Let D(X) be the domain polynomial of degree 10^6 that vanishes on the domain of interest, {1,...,10^6} ---> defined the same way as D but vanishes on a million points
+
+Alice's test : 
+    - pick random x0 inside {1,...,10^9}
+    - query f(x0) and g(x0), let Alpha and Beta be asnwers, respectively (query = interrogate)
+    - accept claim 2 as true if and only if 
+                        C(Alpha) = Beta.D(x0)
+
+Completeness - suppose Bob honest : C(P(X)) vanishes on all x0 {1,...,10^6} ----> test passes with probability 1 even if there is only 2 queries (sets g evaluation of Q'(X))
+
+Soundness - suppose Bob mailicious, say f(1) = 11 : C(P(X)) does not vanishes on all x0 {1,...,10^6}  -> for random x0 in {1,...,10^9}, test will fail with probability 99% (at this moment i'm trying to figure out how many times does Alice will have to compute her test to be sure that Bob is cheating, random guess says 100 times)
+
+-> if Bob uses only low-degree polynomials, Alice can check claim about list-range for abitrary-size lists with only 2 queries and 99% probability
+
+Bob Claim 3 : list is execution trace of incrementing program
+Alice's test slightly different because current value must be equal to next value - 1 
+Same analysis shows perfect completeness, soundness error 1%
+
+Summary : 
+    - query complexity does not depend on running time !!
+    - soundness error depends only on query complexity and code rate
+    - same idea works for complex programs (but need complex C)
+
+
+What about Zero-knowledge ?
+
+Bob Claim 4 : list is execution trace of program, but i can't show you the execution trace  (can contain a password or zcash adress etc.)
+Solution : 
+    - Bob appends to end of list a few (say 10) random entries
+    - now deg(f) = 10^6 + 10, Alice agrees no minor increase in degree (respecting privacy / allowing to use a slightly bigger polynomial) 
+
+Alice's test : 
+    - pick random x0 in {10^6 + 1, ... , 10^9}
+    - query f(x0), f(x0 + 1) and g(x0) denote by Alpha-current, Alpha-next and Beta the answers, respectively
+    - accept Claim 4 as true if and only if 
+                        Alpha-next - Alpha-current - 1 = Beta . D(x0)
+Perfect completeness, soundness error 2% because that analysis did not assume x0 in {1,...,10^6}
+since # queries is small, all Alice sees are uniformly random entries !!!
+
+Summary :
+- Arithmetization solves succint checking of computational integrity
+- Adding randomness and increasing degree gives ZK (last example)
+
+Main issue (problematic) : Bob could cheat presenting f, g that are not needed degree
+2 kind of solution to do this : 
+    1.- IKO07 : Use additively homomorphic encryption (and more) to limit Bob using only low-degree polynomials   
+    2.- PCPs 1990s : Have Bob Commit-then-reveal entries of f,g and add special "proximity-to-low-degree-testing" protocol (next article)
+ 
+1st solution requires trusted setup ---> ZkSNARKs
+2nd solution is transparent, ---> zkSTARKs
